@@ -1,0 +1,13 @@
+# Dependencias
+node_modules/
+package-lock.json
+
+# Estado local del partido
+match_state.json
+
+# Logs y temporales
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db

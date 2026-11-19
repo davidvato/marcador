@@ -1,0 +1,368 @@
+const fs = require('fs');
+const path = require('path');
+const presets = require('./presets');
+
+const STATE_FILE = path.join(__dirname, '..', 'match_state.json');
+const MAX_HISTORY = 50;
+
+class StateManager {
+  constructor() {
+    this.history = [];
+    this.redoStack = [];
+    this.timerInterval = null;
+    this.onStateChange = null; // Callback for server broadcast
+
+    this.state = this.loadState();
+    this.setupTimer();
+  }
+
+  getDefaultState() {
+    const preset = presets.volleyball;
+    return {
+      sport: 'volleyball',
+      tournament: preset.defaultTournament,
+      stage: preset.stage,
+      currentSet: preset.currentSet,
+      maxSets: preset.maxSets,
+      serving: preset.serving,
+      overlayPosition: 'top-center', // 'top-center', 'top-left', 'bottom-center'
+      timer: {
+        seconds: 0,
+        running: false,
+        direction: 'up' // 'up' or 'down'
+      },
+      team1: { ...preset.team1 },
+      team2: { ...preset.team2 },
+      customFields: JSON.parse(JSON.stringify(preset.customFields || []))
+    };
+  }
+
+  loadState() {
+    try {
+      if (fs.existsSync(STATE_FILE)) {
+        const data = fs.readFileSync(STATE_FILE, 'utf-8');
+        const parsed = JSON.parse(data);
+        // Ensure timer is not running on load
+        if (parsed.timer) parsed.timer.running = false;
+        return parsed;
+      }
+    } catch (err) {
+      console.error('Error al cargar match_state.json, usando valores predeterminados:', err.message);
+    }
+    return this.getDefaultState();
+  }
+
+  saveState() {
+    try {
+      fs.writeFileSync(STATE_FILE, JSON.stringify(this.state, null, 2), 'utf-8');
+    } catch (err) {
+      console.error('Error al guardar match_state.json:', err.message);
+    }
+  }
+
+  pushHistory() {
+    const snapshot = JSON.stringify(this.state);
+    this.history.push(snapshot);
+    if (this.history.length > MAX_HISTORY) {
+      this.history.shift();
+    }
+    this.redoStack = []; // Clear redo stack on new action
+  }
+
+  broadcast() {
+    this.saveState();
+    if (typeof this.onStateChange === 'function') {
+      this.onStateChange(this.getState());
+    }
+  }
+
+  getState() {
+    return {
+      ...this.state,
+      canUndo: this.history.length > 0,
+      canRedo: this.redoStack.length > 0
+    };
+  }
+
+  // --- TIMER LOGIC ---
+  setupTimer() {
+    if (this.timerInterval) clearInterval(this.timerInterval);
+    this.timerInterval = setInterval(() => {
+      if (this.state.timer && this.state.timer.running) {
+        if (this.state.timer.direction === 'down') {
+          if (this.state.timer.seconds > 0) {
+            this.state.timer.seconds -= 1;
+          } else {
+            this.state.timer.running = false;
+          }
+        } else {
+          this.state.timer.seconds += 1;
+        }
+        // Broadcast timer tick without pushing to undo history
+        if (typeof this.onStateChange === 'function') {
+          this.onStateChange(this.getState());
+        }
+      }
+    }, 1000);
+  }
+
+  // --- ACTIONS DISPATCHER ---
+  dispatch(action) {
+    const { type, payload } = action;
+
+    // Timer tick actions don't push history
+    if (type === 'TIMER_TICK') return;
+
+    if (type === 'UNDO') {
+      return this.undo();
+    }
+    if (type === 'REDO') {
+      return this.redo();
+    }
+
+    // Save previous state before mutating
+    this.pushHistory();
+
+    switch (type) {
+      case 'UPDATE_SCORE': {
+        const { team, delta, value } = payload;
+        const targetTeam = team === 1 ? this.state.team1 : this.state.team2;
+        if (value !== undefined) {
+          targetTeam.score = Math.max(0, parseInt(value, 10) || 0);
+        } else if (delta !== undefined) {
+          targetTeam.score = Math.max(0, targetTeam.score + parseInt(delta, 10));
+        }
+        break;
+      }
+
+      case 'UPDATE_SETS': {
+        const { team, delta, value } = payload;
+        const targetTeam = team === 1 ? this.state.team1 : this.state.team2;
+        if (value !== undefined) {
+          targetTeam.setsWon = Math.max(0, parseInt(value, 10) || 0);
+        } else if (delta !== undefined) {
+          targetTeam.setsWon = Math.max(0, targetTeam.setsWon + parseInt(delta, 10));
+        }
+        break;
+      }
+
+      case 'SET_CURRENT_SET': {
+        const { currentSet } = payload;
+        this.state.currentSet = Math.max(1, parseInt(currentSet, 10) || 1);
+        break;
+      }
+
+      case 'UPDATE_TIMEOUT': {
+        const { team, delta, used } = payload;
+        const targetTeam = team === 1 ? this.state.team1 : this.state.team2;
+        if (used !== undefined) {
+          targetTeam.timeoutsUsed = Math.min(targetTeam.timeoutsTotal, Math.max(0, parseInt(used, 10)));
+        } else if (delta !== undefined) {
+          targetTeam.timeoutsUsed = Math.min(
+            targetTeam.timeoutsTotal,
+            Math.max(0, targetTeam.timeoutsUsed + parseInt(delta, 10))
+          );
+        }
+        break;
+      }
+
+      case 'SET_SERVING': {
+        const { serving } = payload; // 0: none, 1: team1, 2: team2
+        this.state.serving = [0, 1, 2].includes(serving) ? serving : 0;
+        break;
+      }
+
+      case 'SWAP_TEAMS': {
+        // Swap names, colors, scores, sets, timeouts
+        const tempTeam1 = { ...this.state.team1 };
+        this.state.team1 = { ...this.state.team2 };
+        this.state.team2 = tempTeam1;
+
+        // Invert serving if active
+        if (this.state.serving === 1) this.state.serving = 2;
+        else if (this.state.serving === 2) this.state.serving = 1;
+
+        // Swap team-specific custom fields
+        this.state.customFields.forEach(field => {
+          if (field.type === 'teamCounter' || field.type === 'teamText') {
+            const tempVal = field.team1Value;
+            field.team1Value = field.team2Value;
+            field.team2Value = tempVal;
+          }
+        });
+        break;
+      }
+
+      case 'RESET_SCORE': {
+        // Reset points for the new set, but keep sets won
+        this.state.team1.score = 0;
+        this.state.team2.score = 0;
+        // Reset timeouts used for volleyball/tennis sets
+        this.state.team1.timeoutsUsed = 0;
+        this.state.team2.timeoutsUsed = 0;
+        break;
+      }
+
+      case 'RESET_MATCH': {
+        this.state.team1.score = 0;
+        this.state.team1.setsWon = 0;
+        this.state.team1.timeoutsUsed = 0;
+        this.state.team2.score = 0;
+        this.state.team2.setsWon = 0;
+        this.state.team2.timeoutsUsed = 0;
+        this.state.currentSet = 1;
+        this.state.timer.seconds = 0;
+        this.state.timer.running = false;
+        this.state.customFields.forEach(f => {
+          if (f.type === 'teamCounter') {
+            f.team1Value = 0;
+            f.team2Value = 0;
+          }
+        });
+        break;
+      }
+
+      case 'UPDATE_META': {
+        if (payload.tournament !== undefined) this.state.tournament = payload.tournament;
+        if (payload.stage !== undefined) this.state.stage = payload.stage;
+        if (payload.currentSet !== undefined) this.state.currentSet = parseInt(payload.currentSet, 10) || 1;
+        if (payload.maxSets !== undefined) this.state.maxSets = parseInt(payload.maxSets, 10) || 3;
+        if (payload.overlayPosition !== undefined) this.state.overlayPosition = payload.overlayPosition;
+        break;
+      }
+
+      case 'UPDATE_TEAM': {
+        const { team, name, color, textColor, timeoutsTotal } = payload;
+        const target = team === 1 ? this.state.team1 : this.state.team2;
+        if (name !== undefined) target.name = name;
+        if (color !== undefined) target.color = color;
+        if (textColor !== undefined) target.textColor = textColor;
+        if (timeoutsTotal !== undefined) {
+          target.timeoutsTotal = Math.max(0, parseInt(timeoutsTotal, 10));
+          if (target.timeoutsUsed > target.timeoutsTotal) {
+            target.timeoutsUsed = target.timeoutsTotal;
+          }
+        }
+        break;
+      }
+
+      case 'ADD_CUSTOM_FIELD': {
+        const { label, type, team1Value, team2Value, value } = payload;
+        const id = 'field_' + Date.now();
+        const newField = {
+          id,
+          label: label || 'Nuevo Campo',
+          type: type || 'teamCounter', // 'teamCounter', 'teamText', 'globalText', 'globalCounter'
+          team1Value: team1Value !== undefined ? team1Value : 0,
+          team2Value: team2Value !== undefined ? team2Value : 0,
+          value: value !== undefined ? value : '',
+          visible: true
+        };
+        this.state.customFields.push(newField);
+        break;
+      }
+
+      case 'UPDATE_CUSTOM_FIELD': {
+        const { id, team, delta, value, team1Value, team2Value } = payload;
+        const field = this.state.customFields.find(f => f.id === id);
+        if (field) {
+          if (field.type === 'teamCounter') {
+            if (team === 1) {
+              if (delta !== undefined) field.team1Value = Math.max(0, field.team1Value + delta);
+              if (value !== undefined) field.team1Value = Math.max(0, parseInt(value, 10) || 0);
+            } else if (team === 2) {
+              if (delta !== undefined) field.team2Value = Math.max(0, field.team2Value + delta);
+              if (value !== undefined) field.team2Value = Math.max(0, parseInt(value, 10) || 0);
+            }
+          } else if (field.type === 'teamText') {
+            if (team1Value !== undefined) field.team1Value = team1Value;
+            if (team2Value !== undefined) field.team2Value = team2Value;
+          } else if (field.type === 'globalCounter') {
+            if (delta !== undefined) field.value = Math.max(0, (parseInt(field.value, 10) || 0) + delta);
+            if (value !== undefined) field.value = Math.max(0, parseInt(value, 10) || 0);
+          } else if (field.type === 'globalText') {
+            if (value !== undefined) field.value = value;
+          }
+        }
+        break;
+      }
+
+      case 'TOGGLE_CUSTOM_FIELD': {
+        const { id } = payload;
+        const field = this.state.customFields.find(f => f.id === id);
+        if (field) field.visible = !field.visible;
+        break;
+      }
+
+      case 'REMOVE_CUSTOM_FIELD': {
+        const { id } = payload;
+        this.state.customFields = this.state.customFields.filter(f => f.id !== id);
+        break;
+      }
+
+      case 'APPLY_PRESET': {
+        const { sport } = payload;
+        const preset = presets[sport];
+        if (preset) {
+          this.state.sport = sport;
+          this.state.tournament = preset.defaultTournament;
+          this.state.stage = preset.stage;
+          this.state.currentSet = preset.currentSet;
+          this.state.maxSets = preset.maxSets;
+          this.state.serving = preset.serving;
+          this.state.team1 = { ...preset.team1 };
+          this.state.team2 = { ...preset.team2 };
+          this.state.customFields = JSON.parse(JSON.stringify(preset.customFields || []));
+          this.state.timer.seconds = 0;
+          this.state.timer.running = false;
+        }
+        break;
+      }
+
+      case 'TIMER_ACTION': {
+        const { action, seconds, direction } = payload;
+        if (action === 'start') {
+          this.state.timer.running = true;
+        } else if (action === 'pause') {
+          this.state.timer.running = false;
+        } else if (action === 'reset') {
+          this.state.timer.running = false;
+          this.state.timer.seconds = 0;
+        } else if (action === 'set') {
+          if (seconds !== undefined) this.state.timer.seconds = Math.max(0, parseInt(seconds, 10) || 0);
+          if (direction) this.state.timer.direction = direction;
+        }
+        break;
+      }
+
+      default:
+        console.warn('Acción desconocida:', type);
+        break;
+    }
+
+    this.broadcast();
+    return this.getState();
+  }
+
+  undo() {
+    if (this.history.length === 0) return this.getState();
+    const current = JSON.stringify(this.state);
+    this.redoStack.push(current);
+    const previous = this.history.pop();
+    this.state = JSON.parse(previous);
+    this.broadcast();
+    return this.getState();
+  }
+
+  redo() {
+    if (this.redoStack.length === 0) return this.getState();
+    const current = JSON.stringify(this.state);
+    this.history.push(current);
+    const next = this.redoStack.pop();
+    this.state = JSON.parse(next);
+    this.broadcast();
+    return this.getState();
+  }
+}
+
+module.exports = StateManager;

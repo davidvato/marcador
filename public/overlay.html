@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Marcador Deportivo - Overlay OBS</title>
+  <link rel="stylesheet" href="overlay.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Contenedor principal con posicionamiento dinámico -->
+  <div id="overlay-container" class="overlay-container pos-top-center">
+    
+    <!-- Barra superior: Información del torneo y tiempo -->
+    <div class="meta-bar">
+      <div class="tournament-info">
+        <span id="tournament-name" class="tournament-name">TORNEO DEPORTIVO</span>
+        <span class="meta-sep">•</span>
+        <span id="match-stage" class="match-stage">FASE REGULAR</span>
+      </div>
+      <div id="set-indicator-badge" class="set-indicator">
+        SET <span id="current-set-num">1</span><span id="max-sets-container"> / <span id="max-sets-num">3</span></span>
+      </div>
+      <div id="timer-badge" class="timer-badge hidden">
+        ⏱ <span id="timer-display">00:00</span>
+      </div>
+    </div>
+
+    <!-- Barra principal del Marcador -->
+    <div class="scoreboard-main">
+      
+      <!-- EQUIPO 1 -->
+      <div class="team-card team-left" id="team1-card">
+        <div class="team-color-bar" id="team1-color-bar"></div>
+        <div class="team-details">
+          <div class="team-meta-row">
+            <span class="serve-indicator" id="team1-serve" title="En saque / posesión">🏐</span>
+            <div class="timeouts-container" id="team1-timeouts">
+              <!-- Se generan dinámicamente -->
+            </div>
+          </div>
+          <div class="team-name" id="team1-name">EQUIPO LOCAL</div>
+        </div>
+        <div class="sets-won-badge" id="team1-sets">0</div>
+        <div class="score-box" id="team1-score-box">
+          <span class="score-num" id="team1-score">0</span>
+        </div>
+      </div>
+
+      <!-- SEPARADOR CENTRAL -->
+      <div class="center-divider">
+        <span class="vs-text">VS</span>
+      </div>
+
+      <!-- EQUIPO 2 -->
+      <div class="team-card team-right" id="team2-card">
+        <div class="score-box" id="team2-score-box">
+          <span class="score-num" id="team2-score">0</span>
+        </div>
+        <div class="sets-won-badge" id="team2-sets">0</div>
+        <div class="team-details">
+          <div class="team-meta-row">
+            <div class="timeouts-container" id="team2-timeouts">
+              <!-- Se generan dinámicamente -->
+            </div>
+            <span class="serve-indicator" id="team2-serve" title="En saque / posesión">🏐</span>
+          </div>
+          <div class="team-name" id="team2-name">EQUIPO VISITANTE</div>
+        </div>
+        <div class="team-color-bar" id="team2-color-bar"></div>
+      </div>
+
+    </div>
+
+    <!-- Tira de Campos Personalizados Dinámicos (Faltas, Tarjetas, Patrocinador, etc.) -->
+    <div class="custom-fields-bar hidden" id="custom-fields-bar">
+      <!-- Se inyectan dinámicamente según la configuración -->
+    </div>
+
+  </div>
+
+  <script src="overlay.js"></script>
+</body>
+</html>

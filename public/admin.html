@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Control - Marcador Deportivo</title>
+  <link rel="stylesheet" href="admin.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="admin-app">
+    
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="header-left">
+        <h1 class="app-title">⚡ Marcador Live Studio</h1>
+        <div id="connection-pill" class="status-pill offline">
+          <span class="status-dot"></span> <span id="connection-text">Conectando...</span>
+        </div>
+      </div>
+
+      <div class="header-center">
+        <div class="preset-selector-group">
+          <label for="preset-select">Deporte:</label>
+          <select id="preset-select" class="form-select">
+            <option value="volleyball">🏐 Voleibol</option>
+            <option value="basketball">🏀 Baloncesto</option>
+            <option value="padel">🎾 Pádel / Tenis</option>
+            <option value="soccer">⚽ Fútbol / Futsal</option>
+            <option value="custom">🎯 Personalizado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <button id="btn-copy-url" class="btn btn-secondary" title="Copiar enlace para el Navegador de OBS Studio">
+          📋 Copiar Link OBS
+        </button>
+        <button id="btn-undo" class="btn btn-outline" disabled title="Deshacer última acción (Ctrl+Z)">
+          ↩ Deshacer
+        </button>
+        <button id="btn-redo" class="btn btn-outline" disabled title="Rehacer acción">
+          ↪ Rehacer
+        </button>
+      </div>
+    </header>
+
+    <!-- ACCIONES GLOBALES RÁPIDAS -->
+    <section class="quick-actions-bar">
+      <button id="btn-swap-teams" class="btn btn-action" title="Intercambiar equipos de lado (nombres, colores, puntos y campos)">
+        🔄 Intercambiar Lados
+      </button>
+      <button id="btn-new-set" class="btn btn-action" title="Reiniciar puntaje para nuevo set y sumar +1 al set actual">
+        🆕 Iniciar Siguiente Set
+      </button>
+      <button id="btn-reset-points" class="btn btn-action btn-warning" title="Poner en cero solo los puntos actuales">
+        0️⃣ Reiniciar Puntos
+      </button>
+      <button id="btn-reset-all" class="btn btn-action btn-danger" title="Reiniciar todo el partido a 0">
+        ⚠ Reiniciar Todo
+      </button>
+    </section>
+
+    <!-- ZONA CENTRAL DE MARCADOR (EQUIPO 1 VS EQUIPO 2) -->
+    <main class="teams-container">
+      
+      <!-- EQUIPO 1 -->
+      <section class="team-panel team-1-panel">
+        <div class="team-header">
+          <input type="text" id="t1-name" class="input-team-name" placeholder="Nombre Equipo 1" value="Local">
+          <div class="color-picker-wrapper">
+            <input type="color" id="t1-color" value="#2563eb" title="Color del equipo">
+          </div>
+        </div>
+
+        <div class="serving-toggle">
+          <button id="t1-serve-btn" class="btn btn-serve" title="Asignar saque o posesión">
+            🏐 Saque / Posesión
+          </button>
+        </div>
+
+        <div class="score-display-wrapper">
+          <div class="score-big" id="t1-score-display">0</div>
+        </div>
+
+        <div class="score-btn-group">
+          <button class="btn btn-score btn-add-main" id="t1-plus-1">+1</button>
+          <button class="btn btn-score btn-minus" id="t1-minus-1">-1</button>
+          <button class="btn btn-score btn-quick" id="t1-plus-2">+2</button>
+          <button class="btn btn-score btn-quick" id="t1-plus-3">+3</button>
+        </div>
+
+        <div class="team-substats">
+          <!-- Sets Ganados -->
+          <div class="stat-pill">
+            <label>Sets Ganados</label>
+            <div class="stepper">
+              <button class="btn-step" id="t1-set-minus">-</button>
+              <span class="stepper-val" id="t1-sets-display">0</span>
+              <button class="btn-step" id="t1-set-plus">+</button>
+            </div>
+          </div>
+
+          <!-- Tiempos Fuera (Timeouts) -->
+          <div class="stat-pill">
+            <label>Tiempos Fuera</label>
+            <div class="timeout-controls">
+              <span class="timeout-text" id="t1-timeouts-display">Disponibles: 2/2</span>
+              <div class="timeout-buttons">
+                <button class="btn btn-sm btn-timeout" id="t1-timeout-use" title="Registrar tiempo fuera gastado">
+                  ⏱ Pedir Tiempo
+                </button>
+                <button class="btn btn-sm btn-outline" id="t1-timeout-restore" title="Recuperar tiempo fuera">
+                  +1
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CENTRO: INFORMACIÓN DEL PARTIDO & CRONÓMETRO -->
+      <section class="center-panel">
+        <div class="card match-info-card">
+          <h3>🏆 Info del Partido</h3>
+          <div class="form-group">
+            <label>Torneo / Liga:</label>
+            <input type="text" id="meta-tournament" class="form-input" placeholder="Nombre del Torneo">
+          </div>
+
+          <div class="form-group">
+            <label>Fase / Ronda:</label>
+            <input type="text" id="meta-stage" class="form-input" placeholder="Semifinal, Jornada 1, etc.">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col">
+              <label>Set Actual:</label>
+              <div class="stepper mini-stepper">
+                <button class="btn-step" id="set-minus">-</button>
+                <span class="stepper-val" id="current-set-display">1</span>
+                <button class="btn-step" id="set-plus">+</button>
+              </div>
+            </div>
+            <div class="form-group col">
+              <label>Máx Sets:</label>
+              <input type="number" id="meta-max-sets" class="form-input" min="1" max="15" value="3">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Posición en Pantalla (OBS):</label>
+            <select id="meta-overlay-pos" class="form-select">
+              <option value="pos-top-center">Arriba Centrado</option>
+              <option value="pos-top-left">Arriba Izquierda</option>
+              <option value="pos-bottom-center">Abajo Centrado</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- CRONÓMETRO -->
+        <div class="card timer-card">
+          <h3>⏱ Temporizador</h3>
+          <div class="timer-display" id="admin-timer-display">00:00</div>
+          <div class="timer-controls">
+            <button id="timer-toggle-btn" class="btn btn-primary">Iniciar</button>
+            <button id="timer-reset-btn" class="btn btn-outline">Reiniciar</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- EQUIPO 2 -->
+      <section class="team-panel team-2-panel">
+        <div class="team-header">
+          <input type="text" id="t2-name" class="input-team-name" placeholder="Nombre Equipo 2" value="Visitante">
+          <div class="color-picker-wrapper">
+            <input type="color" id="t2-color" value="#dc2626" title="Color del equipo">
+          </div>
+        </div>
+
+        <div class="serving-toggle">
+          <button id="t2-serve-btn" class="btn btn-serve" title="Asignar saque o posesión">
+            🏐 Saque / Posesión
+          </button>
+        </div>
+
+        <div class="score-display-wrapper">
+          <div class="score-big" id="t2-score-display">0</div>
+        </div>
+
+        <div class="score-btn-group">
+          <button class="btn btn-score btn-add-main" id="t2-plus-1">+1</button>
+          <button class="btn btn-score btn-minus" id="t2-minus-1">-1</button>
+          <button class="btn btn-score btn-quick" id="t2-plus-2">+2</button>
+          <button class="btn btn-score btn-quick" id="t2-plus-3">+3</button>
+        </div>
+
+        <div class="team-substats">
+          <!-- Sets Ganados -->
+          <div class="stat-pill">
+            <label>Sets Ganados</label>
+            <div class="stepper">
+              <button class="btn-step" id="t2-set-minus">-</button>
+              <span class="stepper-val" id="t2-sets-display">0</span>
+              <button class="btn-step" id="t2-set-plus">+</button>
+            </div>
+          </div>
+
+          <!-- Tiempos Fuera (Timeouts) -->
+          <div class="stat-pill">
+            <label>Tiempos Fuera</label>
+            <div class="timeout-controls">
+              <span class="timeout-text" id="t2-timeouts-display">Disponibles: 2/2</span>
+              <div class="timeout-buttons">
+                <button class="btn btn-sm btn-timeout" id="t2-timeout-use" title="Registrar tiempo fuera gastado">
+                  ⏱ Pedir Tiempo
+                </button>
+                <button class="btn btn-sm btn-outline" id="t2-timeout-restore" title="Recuperar tiempo fuera">
+                  +1
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- SECCIÓN DE CAMPOS PERSONALIZADOS DINÁMICOS -->
+    <section class="custom-fields-section">
+      <div class="section-header">
+        <div>
+          <h2>➕ Campos Personalizados (Faltas, Tarjetas, Sponsors, etc.)</h2>
+          <p class="subtitle">Añade o controla métricas adicionales según el deporte que transmitas.</p>
+        </div>
+      </div>
+
+      <!-- Lista de campos activos con controles rápidos -->
+      <div id="custom-fields-list" class="custom-fields-grid">
+        <!-- Renderizado dinámicamente -->
+      </div>
+
+      <!-- Formulario para agregar nuevo campo -->
+      <div class="add-field-card">
+        <h3>Añadir Nuevo Campo al Marcador</h3>
+        <form id="form-add-field" class="add-field-form">
+          <div class="form-group">
+            <label for="new-field-label">Nombre del Campo:</label>
+            <input type="text" id="new-field-label" class="form-input" placeholder="Ej: Faltas, Tarjetas, Patrocinador" required>
+          </div>
+
+          <div class="form-group">
+            <label for="new-field-type">Tipo de Campo:</label>
+            <select id="new-field-type" class="form-select">
+              <option value="teamCounter">Contador por Equipo (Local vs Visitante)</option>
+              <option value="teamText">Texto por Equipo</option>
+              <option value="globalText">Texto Global (Tira inferior)</option>
+              <option value="globalCounter">Contador Global</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-add-field">
+            + Crear Campo
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ATAJOS DE TECLADO INFO -->
+    <footer class="app-footer">
+      <div class="shortcuts-guide">
+        <span class="guide-title">⌨ Atajos de Teclado:</span>
+        <span class="shortcut-tag"><kbd>Q</kbd> / <kbd>1</kbd> : +1 Local</span>
+        <span class="shortcut-tag"><kbd>W</kbd> : -1 Local</span>
+        <span class="shortcut-tag"><kbd>P</kbd> / <kbd>0</kbd> : +1 Visitante</span>
+        <span class="shortcut-tag"><kbd>O</kbd> : -1 Visitante</span>
+        <span class="shortcut-tag"><kbd>S</kbd> : Alternar Saque</span>
+        <span class="shortcut-tag"><kbd>X</kbd> : Intercambiar Lados</span>
+        <span class="shortcut-tag"><kbd>Ctrl+Z</kbd> : Deshacer</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

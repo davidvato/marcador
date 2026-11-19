@@ -1,0 +1,348 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: transparent !important;
+  color: #ffffff;
+  font-family: 'Montserrat', sans-serif;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  user-select: none;
+}
+
+/* --- Posicionamiento del widget en OBS --- */
+.overlay-container {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.65));
+}
+
+.pos-top-center {
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.pos-top-left {
+  top: 24px;
+  left: 32px;
+}
+
+.pos-bottom-center {
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* --- Barra Superior (Torneo / Set / Timer) --- */
+.meta-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(15, 23, 42, 0.95);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  padding: 6px 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.tournament-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.tournament-name {
+  color: #f8fafc;
+  font-weight: 800;
+}
+
+.meta-sep {
+  color: #475569;
+}
+
+.match-stage {
+  color: #cbd5e1;
+}
+
+.set-indicator {
+  background: rgba(255, 255, 255, 0.12);
+  padding: 2px 10px;
+  border-radius: 4px;
+  color: #facc15;
+  font-weight: 800;
+}
+
+.timer-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #0284c7;
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+/* --- Marcador Principal --- */
+.scoreboard-main {
+  display: flex;
+  align-items: stretch;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: none;
+  min-height: 64px;
+  overflow: hidden;
+}
+
+/* Tarjetas de Equipo */
+.team-card {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 280px;
+  max-width: 420px;
+}
+
+.team-color-bar {
+  width: 8px;
+  align-self: stretch;
+  background: #3b82f6;
+  box-shadow: 0 0 12px currentColor;
+  transition: background-color 0.4s ease;
+}
+
+.team-details {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8px 16px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.team-left .team-details {
+  align-items: flex-start;
+}
+
+.team-right .team-details {
+  align-items: flex-end;
+}
+
+.team-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.team-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+/* Indicador de Saque / Posesión */
+.serve-indicator {
+  font-size: 0.85rem;
+  display: inline-block;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.serve-indicator.active {
+  opacity: 1;
+  animation: pulse-serve 1.6s infinite ease-in-out;
+}
+
+@keyframes pulse-serve {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 4px #facc15);
+  }
+  50% {
+    transform: scale(1.25);
+    filter: drop-shadow(0 0 10px #facc15);
+  }
+}
+
+/* Indicador de Tiempos Fuera (Timeouts) */
+.timeouts-container {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.timeout-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+  transition: all 0.3s ease;
+}
+
+.timeout-dot.used {
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Insignia de Sets Ganados */
+.sets-won-badge {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #facc15;
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  width: 36px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  margin: 0 8px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+  transition: transform 0.25s ease;
+}
+
+/* Caja de Puntaje */
+.score-box {
+  background: #020617;
+  min-width: 68px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.score-num {
+  font-family: 'Oswald', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.2s ease;
+}
+
+.score-pop {
+  animation: pop-animation 0.35s ease-out;
+  color: #38bdf8 !important;
+}
+
+@keyframes pop-animation {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.35); text-shadow: 0 0 15px rgba(56, 189, 248, 0.9); }
+  100% { transform: scale(1); }
+}
+
+/* Separador central */
+.center-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 6, 23, 0.8);
+  padding: 0 12px;
+}
+
+.vs-text {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #64748b;
+  letter-spacing: 0.15em;
+}
+
+/* --- Barra de Campos Personalizados --- */
+.custom-fields-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: rgba(10, 15, 29, 0.95);
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 6px 20px;
+  font-size: 0.8rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  margin-top: 2px;
+}
+
+.custom-field-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+
+.custom-field-label {
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+}
+
+.custom-field-values {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+}
+
+.cf-val-1 {
+  color: #60a5fa;
+}
+
+.cf-val-2 {
+  color: #f87171;
+}
+
+.cf-sep {
+  color: #475569;
+}
+
+.cf-global-val {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.hidden {
+  display: none !important;
+}
