@@ -63,7 +63,7 @@ function renderTimeouts(container, total, used) {
   }
 }
 
-function renderCustomFields(fields) {
+function renderCustomFields(fields, state) {
   const container = document.getElementById('custom-fields-bar');
   if (!container) return;
 
@@ -78,6 +78,10 @@ function renderCustomFields(fields) {
   container.classList.remove('hidden');
   container.innerHTML = '';
 
+  const isTeam1Top = state && state.topTeam !== 2;
+  const topTeam = isTeam1Top ? state?.team1 : state?.team2;
+  const bottomTeam = isTeam1Top ? state?.team2 : state?.team1;
+
   activeFields.forEach(field => {
     const item = document.createElement('div');
     item.className = 'custom-field-item';
@@ -91,9 +95,13 @@ function renderCustomFields(fields) {
     values.className = 'custom-field-values';
 
     if (field.type === 'teamCounter' || field.type === 'teamText') {
+      const topVal = isTeam1Top ? field.team1Value : field.team2Value;
+      const bottomVal = isTeam1Top ? field.team2Value : field.team1Value;
+
       const v1 = document.createElement('span');
       v1.className = 'cf-val-1';
-      v1.textContent = field.team1Value ?? 0;
+      v1.style.color = topTeam?.color || '#60a5fa';
+      v1.textContent = topVal ?? 0;
 
       const sep = document.createElement('span');
       sep.className = 'cf-sep';
@@ -101,7 +109,8 @@ function renderCustomFields(fields) {
 
       const v2 = document.createElement('span');
       v2.className = 'cf-val-2';
-      v2.textContent = field.team2Value ?? 0;
+      v2.style.color = bottomTeam?.color || '#f87171';
+      v2.textContent = bottomVal ?? 0;
 
       values.appendChild(v1);
       values.appendChild(sep);
@@ -130,8 +139,75 @@ function renderOverlay(state) {
   // Posición
   const container = document.getElementById('overlay-container');
   if (container) {
-    container.classList.remove('pos-top-center', 'pos-top-left', 'pos-bottom-center');
+    container.classList.remove('pos-top-center', 'pos-top-left', 'pos-top-right', 'pos-bottom-center');
     container.classList.add(state.overlayPosition || 'pos-top-center');
+  }
+
+  // Ventana de Tiempo Fuera con tiempo corriendo (ubicada en el marcador)
+  const timeoutBanner = document.getElementById('timeout-overlay-banner');
+
+  const activeSponsors = (state.sponsors || []).filter(s => s.visible !== false);
+  const currentSponsorIdx = state.sponsorSettings?.currentSponsorIndex || 0;
+  const currentSponsor = activeSponsors.length > 0 ? activeSponsors[currentSponsorIdx % activeSponsors.length] : null;
+
+  if (state.activeTimeout && state.activeTimeout.secondsLeft > 0) {
+    timeoutBanner.classList.remove('hidden');
+    document.getElementById('tob-team-name').textContent = state.activeTimeout.teamName || 'EQUIPO';
+    document.getElementById('tob-seconds').textContent = `${state.activeTimeout.secondsLeft}s`;
+    if (state.activeTimeout.color) {
+      timeoutBanner.style.borderLeftColor = state.activeTimeout.color;
+    }
+  } else {
+    timeoutBanner.classList.add('hidden');
+  }
+
+  // Ventana APARTE de Patrocinadores al CENTRO DE LA PANTALLA durante Tiempo Fuera
+  const centerSponsorModal = document.getElementById('timeout-center-sponsor-modal');
+  if (state.activeTimeout && state.activeTimeout.secondsLeft > 0 && state.sponsorSettings?.showDuringTimeout && currentSponsor) {
+    centerSponsorModal.classList.remove('hidden');
+    const tcsmLogo = document.getElementById('tcsm-logo');
+    const tcsmName = document.getElementById('tcsm-name');
+    const tcsmDots = document.getElementById('tcsm-dots');
+
+    if (currentSponsor.image) {
+      tcsmLogo.src = currentSponsor.image;
+      tcsmLogo.classList.remove('hidden');
+    } else {
+      tcsmLogo.classList.add('hidden');
+    }
+    tcsmName.textContent = currentSponsor.name || '';
+
+    if (tcsmDots) {
+      tcsmDots.innerHTML = '';
+      if (activeSponsors.length > 1) {
+        activeSponsors.forEach((_, i) => {
+          const dot = document.createElement('span');
+          dot.className = `tcsm-dot ${i === (currentSponsorIdx % activeSponsors.length) ? 'active' : ''}`;
+          tcsmDots.appendChild(dot);
+        });
+      }
+    }
+  } else {
+    if (centerSponsorModal) {
+      centerSponsorModal.classList.add('hidden');
+    }
+  }
+
+  // Patrocinadores durante el juego en vivo
+  const gameSponsorBar = document.getElementById('game-sponsor-bar');
+  if (state.sponsorSettings?.showDuringGame && currentSponsor && (!state.activeTimeout || !state.sponsorSettings?.showDuringTimeout)) {
+    gameSponsorBar.classList.remove('hidden');
+    const gsbImg = document.getElementById('gsb-img');
+    const gsbName = document.getElementById('gsb-name');
+    if (currentSponsor.image) {
+      gsbImg.src = currentSponsor.image;
+      gsbImg.classList.remove('hidden');
+    } else {
+      gsbImg.classList.add('hidden');
+    }
+    gsbName.textContent = currentSponsor.name || '';
+  } else {
+    gameSponsorBar.classList.add('hidden');
   }
 
   // Metadatos
@@ -155,50 +231,74 @@ function renderOverlay(state) {
     timerBadge.classList.add('hidden');
   }
 
+  // Identificar qué equipo está en la posición de arriba y cuál en la posición inferior
+  const isTeam1Top = state.topTeam !== 2;
+  const topTeam = isTeam1Top ? state.team1 : state.team2;
+  const topNum = isTeam1Top ? 1 : 2;
+  const bottomTeam = isTeam1Top ? state.team2 : state.team1;
+  const bottomNum = isTeam1Top ? 2 : 1;
+
   // Ícono de deporte para servicio
   const currentIcon = sportIcons[state.sport] || '🏐';
-  const serve1 = document.getElementById('team1-serve');
-  const serve2 = document.getElementById('team2-serve');
-  serve1.textContent = currentIcon;
-  serve2.textContent = currentIcon;
 
-  if (state.serving === 1) {
-    serve1.classList.add('active');
-    serve2.classList.remove('active');
-  } else if (state.serving === 2) {
-    serve1.classList.remove('active');
-    serve2.classList.add('active');
+  // --- FILA SUPERIOR (Posición de Arriba) ---
+  document.getElementById('row-top-name').textContent = topTeam.name || (topNum === 1 ? 'LOCAL' : 'VISITANTE');
+  document.getElementById('row-top-color-bar').style.backgroundColor = topTeam.color || '#2563eb';
+  document.getElementById('row-top-sets').textContent = topTeam.setsWon ?? 0;
+
+  const serveTop = document.getElementById('row-top-serve');
+  serveTop.textContent = currentIcon;
+  if (state.serving === topNum) {
+    serveTop.classList.add('active');
   } else {
-    serve1.classList.remove('active');
-    serve2.classList.remove('active');
+    serveTop.classList.remove('active');
   }
 
-  // Equipo 1
-  document.getElementById('team1-name').textContent = state.team1.name || 'EQUIPO 1';
-  document.getElementById('team1-color-bar').style.backgroundColor = state.team1.color || '#2563eb';
-  document.getElementById('team1-sets').textContent = state.team1.setsWon ?? 0;
-
-  const score1Elem = document.getElementById('team1-score');
-  if (lastState && lastState.team1 && state.team1.score !== lastState.team1.score) {
-    triggerScoreAnimation(score1Elem);
+  const topTimeoutsSection = document.getElementById('row-top-timeouts-section');
+  if (topTeam.timeoutsTotal && topTeam.timeoutsTotal > 0) {
+    topTimeoutsSection.classList.remove('hidden');
+    renderTimeouts(document.getElementById('row-top-timeouts'), topTeam.timeoutsTotal, topTeam.timeoutsUsed);
+  } else {
+    topTimeoutsSection.classList.add('hidden');
   }
-  score1Elem.textContent = state.team1.score ?? 0;
-  renderTimeouts(document.getElementById('team1-timeouts'), state.team1.timeoutsTotal, state.team1.timeoutsUsed);
 
-  // Equipo 2
-  document.getElementById('team2-name').textContent = state.team2.name || 'EQUIPO 2';
-  document.getElementById('team2-color-bar').style.backgroundColor = state.team2.color || '#dc2626';
-  document.getElementById('team2-sets').textContent = state.team2.setsWon ?? 0;
-
-  const score2Elem = document.getElementById('team2-score');
-  if (lastState && lastState.team2 && state.team2.score !== lastState.team2.score) {
-    triggerScoreAnimation(score2Elem);
+  const scoreTopElem = document.getElementById('row-top-score');
+  const prevTopScore = lastState ? (topNum === 1 ? lastState.team1?.score : lastState.team2?.score) : null;
+  if (prevTopScore !== null && topTeam.score !== prevTopScore) {
+    triggerScoreAnimation(scoreTopElem);
   }
-  score2Elem.textContent = state.team2.score ?? 0;
-  renderTimeouts(document.getElementById('team2-timeouts'), state.team2.timeoutsTotal, state.team2.timeoutsUsed);
+  scoreTopElem.textContent = topTeam.score ?? 0;
+
+  // --- FILA INFERIOR (Posición Inferior) ---
+  document.getElementById('row-bottom-name').textContent = bottomTeam.name || (bottomNum === 1 ? 'LOCAL' : 'VISITANTE');
+  document.getElementById('row-bottom-color-bar').style.backgroundColor = bottomTeam.color || '#dc2626';
+  document.getElementById('row-bottom-sets').textContent = bottomTeam.setsWon ?? 0;
+
+  const serveBottom = document.getElementById('row-bottom-serve');
+  serveBottom.textContent = currentIcon;
+  if (state.serving === bottomNum) {
+    serveBottom.classList.add('active');
+  } else {
+    serveBottom.classList.remove('active');
+  }
+
+  const bottomTimeoutsSection = document.getElementById('row-bottom-timeouts-section');
+  if (bottomTeam.timeoutsTotal && bottomTeam.timeoutsTotal > 0) {
+    bottomTimeoutsSection.classList.remove('hidden');
+    renderTimeouts(document.getElementById('row-bottom-timeouts'), bottomTeam.timeoutsTotal, bottomTeam.timeoutsUsed);
+  } else {
+    bottomTimeoutsSection.classList.add('hidden');
+  }
+
+  const scoreBottomElem = document.getElementById('row-bottom-score');
+  const prevBottomScore = lastState ? (bottomNum === 1 ? lastState.team1?.score : lastState.team2?.score) : null;
+  if (prevBottomScore !== null && bottomTeam.score !== prevBottomScore) {
+    triggerScoreAnimation(scoreBottomElem);
+  }
+  scoreBottomElem.textContent = bottomTeam.score ?? 0;
 
   // Campos personalizados
-  renderCustomFields(state.customFields);
+  renderCustomFields(state.customFields, state);
 
   lastState = JSON.parse(JSON.stringify(state));
 }

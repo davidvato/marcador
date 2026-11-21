@@ -12,6 +12,18 @@
   <!-- Contenedor principal con posicionamiento dinámico -->
   <div id="overlay-container" class="overlay-container pos-top-center">
     
+    <!-- ANUNCIO / VENTANA DE TIEMPO FUERA (TIEMPO CORRIENDO) -->
+    <div id="timeout-overlay-banner" class="timeout-overlay-banner hidden">
+      <div class="tob-content">
+        <div class="tob-icon">⏱</div>
+        <div class="tob-text-group">
+          <span class="tob-tag">TIEMPO FUERA</span>
+          <span class="tob-team-name" id="tob-team-name">EQUIPO LOCAL</span>
+        </div>
+        <div class="tob-seconds-badge" id="tob-seconds">30s</div>
+      </div>
+    </div>
+
     <!-- Barra superior: Información del torneo y tiempo -->
     <div class="meta-bar">
       <div class="tournament-info">
@@ -27,48 +39,48 @@
       </div>
     </div>
 
-    <!-- Barra principal del Marcador -->
-    <div class="scoreboard-main">
+    <!-- Barra principal del Marcador (2 Filas: Posición de Arriba y Posición Inferior) -->
+    <div class="scoreboard-main stacked-scoreboard">
       
-      <!-- EQUIPO 1 -->
-      <div class="team-card team-left" id="team1-card">
-        <div class="team-color-bar" id="team1-color-bar"></div>
+      <!-- FILA SUPERIOR (Posición de Arriba) -->
+      <div class="team-row team-top" id="row-top">
+        <div class="team-color-bar" id="row-top-color-bar"></div>
         <div class="team-details">
-          <div class="team-meta-row">
-            <span class="serve-indicator" id="team1-serve" title="En saque / posesión">🏐</span>
-            <div class="timeouts-container" id="team1-timeouts">
-              <!-- Se generan dinámicamente -->
-            </div>
+          <div class="team-name-line">
+            <span class="serve-indicator" id="row-top-serve" title="En saque / posesión">🏐</span>
+            <span class="team-name" id="row-top-name">EQUIPO LOCAL</span>
           </div>
-          <div class="team-name" id="team1-name">EQUIPO LOCAL</div>
+          <div class="timeouts-section" id="row-top-timeouts-section">
+            <span class="timeouts-label">Tiempo Fuera</span>
+            <div class="timeouts-container" id="row-top-timeouts"></div>
+          </div>
         </div>
-        <div class="sets-won-badge" id="team1-sets">0</div>
-        <div class="score-box" id="team1-score-box">
-          <span class="score-num" id="team1-score">0</span>
+        <div class="sets-won-badge" id="row-top-sets">0</div>
+        <div class="score-box" id="row-top-score-box">
+          <span class="score-num" id="row-top-score">0</span>
         </div>
       </div>
 
-      <!-- SEPARADOR CENTRAL -->
-      <div class="center-divider">
-        <span class="vs-text">VS</span>
-      </div>
+      <!-- SEPARADOR DE FILAS -->
+      <div class="row-divider"></div>
 
-      <!-- EQUIPO 2 -->
-      <div class="team-card team-right" id="team2-card">
-        <div class="score-box" id="team2-score-box">
-          <span class="score-num" id="team2-score">0</span>
-        </div>
-        <div class="sets-won-badge" id="team2-sets">0</div>
+      <!-- FILA INFERIOR (Posición Inferior) -->
+      <div class="team-row team-bottom" id="row-bottom">
+        <div class="team-color-bar" id="row-bottom-color-bar"></div>
         <div class="team-details">
-          <div class="team-meta-row">
-            <div class="timeouts-container" id="team2-timeouts">
-              <!-- Se generan dinámicamente -->
-            </div>
-            <span class="serve-indicator" id="team2-serve" title="En saque / posesión">🏐</span>
+          <div class="team-name-line">
+            <span class="serve-indicator" id="row-bottom-serve" title="En saque / posesión">🏐</span>
+            <span class="team-name" id="row-bottom-name">EQUIPO VISITANTE</span>
           </div>
-          <div class="team-name" id="team2-name">EQUIPO VISITANTE</div>
+          <div class="timeouts-section" id="row-bottom-timeouts-section">
+            <span class="timeouts-label">Tiempo Fuera</span>
+            <div class="timeouts-container" id="row-bottom-timeouts"></div>
+          </div>
         </div>
-        <div class="team-color-bar" id="team2-color-bar"></div>
+        <div class="sets-won-badge" id="row-bottom-sets">0</div>
+        <div class="score-box" id="row-bottom-score-box">
+          <span class="score-num" id="row-bottom-score">0</span>
+        </div>
       </div>
 
     </div>
@@ -78,6 +90,29 @@
       <!-- Se inyectan dinámicamente según la configuración -->
     </div>
 
+    <!-- Tira de Patrocinadores durante el Juego en Vivo -->
+    <div id="game-sponsor-bar" class="game-sponsor-bar hidden">
+      <span class="gsb-tag">PATROCINADOR</span>
+      <div class="gsb-content">
+        <img id="gsb-img" class="gsb-img hidden" src="" alt="Logo Patrocinador">
+        <span id="gsb-name" class="gsb-name"></span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- VENTANA INDEPENDIENTE DE PATROCINADORES AL CENTRO DE LA PANTALLA (DURANTE TIEMPO FUERA) -->
+  <div id="timeout-center-sponsor-modal" class="timeout-center-sponsor-modal hidden">
+    <div class="tcsm-card">
+      <div class="tcsm-header">
+        <span class="tcsm-badge">⭐ PATROCINADOR OFICIAL</span>
+      </div>
+      <div class="tcsm-body" id="tcsm-body">
+        <img id="tcsm-logo" class="tcsm-logo hidden" src="" alt="Logo Patrocinador">
+        <div id="tcsm-name" class="tcsm-name"></div>
+      </div>
+      <div id="tcsm-dots" class="tcsm-dots"></div>
+    </div>
   </div>
 
   <script src="overlay.js"></script>

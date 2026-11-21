@@ -612,3 +612,436 @@ kbd {
   font-size: 0.75rem;
   font-family: monospace;
 }
+
+/* Indicador de posición en el marcador OBS */
+.team-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.pos-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  letter-spacing: 0.03em;
+  transition: all 0.3s ease;
+}
+
+.pos-badge.pos-top {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.pos-badge.pos-bottom {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+/* Modal / Anuncio de Tiempo Fuera */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: modal-fade-in 0.25s ease-out;
+}
+
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-card {
+  background: #1e293b;
+  border: 2px solid #f59e0b;
+  border-radius: 16px;
+  padding: 32px 36px;
+  max-width: 480px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(245, 158, 11, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  animation: modal-pop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modal-pop {
+  from { transform: scale(0.9); }
+  to { transform: scale(1); }
+}
+
+.modal-badge-pulse {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  letter-spacing: 0.08em;
+  animation: pulse-badge 1.5s infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.modal-team-title {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #f8fafc;
+  text-transform: uppercase;
+}
+
+.modal-subtitle {
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+.modal-timer-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #0f172a;
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: 1px solid #334155;
+}
+
+.modal-timer-label {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.modal-timer-num {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #f59e0b;
+}
+
+.btn-modal-action {
+  font-size: 1rem;
+  padding: 12px 24px;
+  border-radius: 8px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+/* Ajustes de tiempo en el modal */
+.modal-adjust-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.adjust-label {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.adjust-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.modal-sponsor-preview {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  padding: 8px 16px;
+  border-radius: 8px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.msp-tag {
+  font-size: 0.7rem;
+  color: #facc15;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.msp-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.msp-logo {
+  max-height: 28px;
+  max-width: 60px;
+  object-fit: contain;
+}
+
+.msp-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+/* Card de Ajustes de Tiempo Fuera */
+.timeout-settings-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stepper-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mini-dur-input {
+  width: 72px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.admin-active-timeout-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.aatb-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #fca5a5;
+}
+
+.aatb-pulse {
+  color: #ef4444;
+  animation: pulse-badge 1s infinite;
+}
+
+/* SECCIÓN DE PATROCINADORES / SPONSORS */
+.sponsors-section {
+  background-color: var(--bg-card);
+  border-radius: 14px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.sponsors-controls-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  background: #0f172a;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.sponsor-toggle-group {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #f8fafc;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-blue);
+  cursor: pointer;
+}
+
+.sponsor-delay-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.delay-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.delay-unit {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+/* Grid de Sponsors */
+.sponsors-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .sponsors-grid {
+    grid-template-columns: 1fr;
+  }
+  .sponsor-delay-group {
+    margin-left: 0;
+  }
+}
+
+.sponsors-list-card, .add-sponsor-card {
+  background: #0f172a;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.sponsors-list-card h3, .add-sponsor-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-bottom: 12px;
+}
+
+.sponsors-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.sponsor-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 8px 12px;
+  border-radius: 8px;
+  gap: 12px;
+}
+
+.sponsor-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.sponsor-logo-thumb {
+  width: 48px;
+  height: 36px;
+  object-fit: contain;
+  background: #020617;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.sponsor-item-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sponsor-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Formulario Nuevo Sponsor */
+.add-sponsor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.image-input-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-upload-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.file-chosen-text {
+  font-size: 0.75rem;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+
+.sponsor-preview-box {
+  background: #020617;
+  border: 1px dashed var(--border-color);
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.preview-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.sponsor-preview-img {
+  max-height: 48px;
+  max-width: 140px;
+  object-fit: contain;
+}
+
+.hidden {
+  display: none !important;
+}

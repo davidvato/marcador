@@ -69,7 +69,10 @@
       <!-- EQUIPO 1 -->
       <section class="team-panel team-1-panel">
         <div class="team-header">
-          <input type="text" id="t1-name" class="input-team-name" placeholder="Nombre Equipo 1" value="Local">
+          <div class="team-title-row">
+            <input type="text" id="t1-name" class="input-team-name" placeholder="Nombre Equipo 1" value="Local">
+            <span class="pos-badge pos-top" id="t1-pos-badge" title="Posición en el marcador de OBS">⬆ Posición Arriba</span>
+          </div>
           <div class="color-picker-wrapper">
             <input type="color" id="t1-color" value="#2563eb" title="Color del equipo">
           </div>
@@ -155,6 +158,7 @@
             <select id="meta-overlay-pos" class="form-select">
               <option value="pos-top-center">Arriba Centrado</option>
               <option value="pos-top-left">Arriba Izquierda</option>
+              <option value="pos-top-right">Arriba Derecha</option>
               <option value="pos-bottom-center">Abajo Centrado</option>
             </select>
           </div>
@@ -169,12 +173,38 @@
             <button id="timer-reset-btn" class="btn btn-outline">Reiniciar</button>
           </div>
         </div>
+
+        <!-- CONFIGURACIÓN DE TIEMPO FUERA -->
+        <div class="card timeout-settings-card">
+          <h3>⏱ Ajustes de Tiempo Fuera</h3>
+          <div class="form-group">
+            <label for="timeout-default-dur">Duración de Tiempo Fuera (segundos):</label>
+            <div class="stepper-inline">
+              <button class="btn-step" id="btn-timeout-dur-minus">-5</button>
+              <input type="number" id="timeout-default-dur" class="form-input mini-dur-input" min="5" max="300" value="30">
+              <button class="btn-step" id="btn-timeout-dur-plus">+5</button>
+            </div>
+          </div>
+          <!-- Barra de estado para terminar antes el tiempo fuera -->
+          <div id="admin-active-timeout-bar" class="admin-active-timeout-bar hidden">
+            <div class="aatb-info">
+              <span class="aatb-pulse">●</span>
+              <span>Tiempo Fuera: <strong id="aatb-team-name">LOCAL</strong> (<span id="aatb-seconds">30s</span>)</span>
+            </div>
+            <button id="btn-bar-cancel-timeout" class="btn btn-sm btn-danger" title="Terminar el tiempo fuera antes de que termine el cronómetro">
+              ⏹ Terminar Ahora
+            </button>
+          </div>
+        </div>
       </section>
 
       <!-- EQUIPO 2 -->
       <section class="team-panel team-2-panel">
         <div class="team-header">
-          <input type="text" id="t2-name" class="input-team-name" placeholder="Nombre Equipo 2" value="Visitante">
+          <div class="team-title-row">
+            <input type="text" id="t2-name" class="input-team-name" placeholder="Nombre Equipo 2" value="Visitante">
+            <span class="pos-badge pos-bottom" id="t2-pos-badge" title="Posición en el marcador de OBS">⬇ Posición Inferior</span>
+          </div>
           <div class="color-picker-wrapper">
             <input type="color" id="t2-color" value="#dc2626" title="Color del equipo">
           </div>
@@ -268,6 +298,85 @@
       </div>
     </section>
 
+    <!-- SECCIÓN DE PATROCINADORES / SPONSORS -->
+    <section class="sponsors-section">
+      <div class="section-header">
+        <div>
+          <h2>⭐ Patrocinadores y Sponsors</h2>
+          <p class="subtitle">Gestiona marcas comerciales. Puedes mostrarlas rotando durante el <strong>Tiempo Fuera</strong> y/o activarlas en pantalla durante el <strong>Juego en Vivo</strong>.</p>
+        </div>
+      </div>
+
+      <!-- Barra de controles y modos de visualización -->
+      <div class="sponsors-controls-bar">
+        <div class="sponsor-toggle-group">
+          <label class="toggle-label" title="Rotar patrocinadores de forma consecutiva al solicitar Tiempo Fuera">
+            <input type="checkbox" id="sp-show-timeout" checked>
+            <span>Mostrar rotación durante <strong>Tiempo Fuera</strong></span>
+          </label>
+        </div>
+
+        <div class="sponsor-toggle-group">
+          <label class="toggle-label" title="Mostrar la tira de patrocinadores en vivo durante el partido">
+            <input type="checkbox" id="sp-show-game">
+            <span>Mostrar en pantalla durante el <strong>Juego en Vivo</strong></span>
+          </label>
+        </div>
+
+        <div class="sponsor-delay-group">
+          <label for="sp-delay-input">Tiempo por Patrocinador (delay):</label>
+          <div class="delay-input-wrapper">
+            <input type="number" id="sp-delay-input" class="form-input mini-dur-input" min="2" max="60" value="5">
+            <span class="delay-unit">seg</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid de Patrocinadores: Lista + Formulario -->
+      <div class="sponsors-grid">
+        <!-- Lista de Patrocinadores -->
+        <div class="sponsors-list-card">
+          <h3>Patrocinadores Registrados (<span id="sponsors-count">0</span>)</h3>
+          <div id="sponsors-list" class="sponsors-list-container">
+            <!-- Renderizado dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Formulario para Añadir Patrocinador -->
+        <div class="add-sponsor-card">
+          <h3>+ Añadir Patrocinador</h3>
+          <form id="form-add-sponsor" class="add-sponsor-form">
+            <div class="form-group">
+              <label for="new-sponsor-name">Nombre de la Marca o Empresa:</label>
+              <input type="text" id="new-sponsor-name" class="form-input" placeholder="Ej: Red Bull, Gatorade, Nike" required>
+            </div>
+
+            <div class="form-group">
+              <label>Logo / Imagen (Opcional):</label>
+              <div class="image-input-options">
+                <input type="text" id="new-sponsor-img-url" class="form-input" placeholder="URL de imagen (https://...)">
+                <div class="file-upload-wrapper">
+                  <label for="new-sponsor-file" class="btn btn-secondary btn-sm file-btn">📁 Subir Archivo Local</label>
+                  <input type="file" id="new-sponsor-file" accept="image/*" style="display: none;">
+                  <span id="file-chosen-text" class="file-chosen-text">Ningún archivo</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Vista previa del logo -->
+            <div id="sponsor-preview-wrapper" class="sponsor-preview-box hidden">
+              <span class="preview-label">Vista previa del logo:</span>
+              <img id="new-sponsor-preview-img" class="sponsor-preview-img" src="" alt="Vista previa">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-add-sponsor">
+              + Guardar Patrocinador
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
     <!-- ATAJOS DE TECLADO INFO -->
     <footer class="app-footer">
       <div class="shortcuts-guide">
@@ -281,6 +390,44 @@
         <span class="shortcut-tag"><kbd>Ctrl+Z</kbd> : Deshacer</span>
       </div>
     </footer>
+
+    <!-- MODAL / ANUNCIO TIEMPO FUERA -->
+    <div id="timeout-admin-modal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <div class="modal-badge-pulse">⏱ TIEMPO FUERA EN CURSO</div>
+        <h2 id="timeout-admin-team" class="modal-team-title">EQUIPO LOCAL</h2>
+        <p class="modal-subtitle">Transmitiendo anuncio y rotación en vivo para OBS Studio</p>
+        
+        <div class="modal-timer-box">
+          <span class="modal-timer-label">Tiempo restante:</span>
+          <span id="timeout-admin-seconds" class="modal-timer-num">30s</span>
+        </div>
+
+        <!-- Ajustar cronómetro en vivo -->
+        <div class="modal-adjust-row">
+          <span class="adjust-label">Ajustar tiempo del cronómetro:</span>
+          <div class="adjust-buttons">
+            <button class="btn btn-sm btn-outline" id="btn-adj-minus-10">-10s</button>
+            <button class="btn btn-sm btn-outline" id="btn-adj-minus-5">-5s</button>
+            <button class="btn btn-sm btn-outline" id="btn-adj-plus-5">+5s</button>
+            <button class="btn btn-sm btn-outline" id="btn-adj-plus-10">+10s</button>
+          </div>
+        </div>
+
+        <!-- Vista previa de patrocinador rotando -->
+        <div id="modal-sponsor-preview" class="modal-sponsor-preview hidden">
+          <span class="msp-tag">Patrocinador rotando en pantalla:</span>
+          <div class="msp-info">
+            <img id="msp-logo" class="msp-logo hidden" src="" alt="Logo">
+            <span id="msp-name" class="msp-name"></span>
+          </div>
+        </div>
+
+        <button id="btn-close-timeout" class="btn btn-danger btn-modal-action" title="Terminar el tiempo fuera antes de que expire el cronómetro">
+          ⏹ Terminar Tiempo Fuera Ahora
+        </button>
+      </div>
+    </div>
 
   </div>
 

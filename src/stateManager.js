@@ -25,7 +25,19 @@ class StateManager {
       currentSet: preset.currentSet,
       maxSets: preset.maxSets,
       serving: preset.serving,
-      overlayPosition: 'top-center', // 'top-center', 'top-left', 'bottom-center'
+      overlayPosition: 'pos-top-center', // 'pos-top-center', 'pos-top-left', 'pos-top-right', 'pos-bottom-center'
+      topTeam: 1, // 1: team1 en posición superior / arriba, 2: team2 en posición superior / arriba
+      activeTimeout: null, // { team: 1, teamName: 'Equipo Local', color: '#2563eb', secondsLeft: 30 }
+      timeoutSettings: {
+        defaultDuration: 30
+      },
+      sponsors: [], // [ { id: 'sp_1', name: 'Gatorade', image: 'data:...', visible: true } ]
+      sponsorSettings: {
+        showDuringTimeout: true,
+        showDuringGame: false,
+        rotationDelay: 5,
+        currentSponsorIndex: 0
+      },
       timer: {
         seconds: 0,
         running: false,
@@ -44,6 +56,18 @@ class StateManager {
         const parsed = JSON.parse(data);
         // Ensure timer is not running on load
         if (parsed.timer) parsed.timer.running = false;
+        parsed.activeTimeout = null;
+        if (!parsed.topTeam) parsed.topTeam = 1;
+        if (!parsed.timeoutSettings) parsed.timeoutSettings = { defaultDuration: 30 };
+        if (!parsed.sponsors) parsed.sponsors = [];
+        if (!parsed.sponsorSettings) {
+          parsed.sponsorSettings = {
+            showDuringTimeout: true,
+            showDuringGame: false,
+            rotationDelay: 5,
+            currentSponsorIndex: 0
+          };
+        }
         return parsed;
       }
     } catch (err) {
@@ -88,6 +112,8 @@ class StateManager {
   setupTimer() {
     if (this.timerInterval) clearInterval(this.timerInterval);
     this.timerInterval = setInterval(() => {
+      let stateChanged = false;
+
       if (this.state.timer && this.state.timer.running) {
         if (this.state.timer.direction === 'down') {
           if (this.state.timer.seconds > 0) {
@@ -98,10 +124,35 @@ class StateManager {
         } else {
           this.state.timer.seconds += 1;
         }
-        // Broadcast timer tick without pushing to undo history
-        if (typeof this.onStateChange === 'function') {
-          this.onStateChange(this.getState());
+        stateChanged = true;
+      }
+
+      if (this.state.activeTimeout) {
+        if (this.state.activeTimeout.secondsLeft > 0) {
+          this.state.activeTimeout.secondsLeft -= 1;
+          stateChanged = true;
+        } else {
+          this.state.activeTimeout = null;
+          stateChanged = true;
         }
+      }
+
+      // Rotación de Patrocinadores (consecutiva con delay)
+      const shouldRotateSponsors = (this.state.sponsorSettings?.showDuringGame || (this.state.activeTimeout && this.state.sponsorSettings?.showDuringTimeout));
+      const activeSponsors = (this.state.sponsors || []).filter(s => s.visible !== false);
+      if (shouldRotateSponsors && activeSponsors.length > 1) {
+        this._sponsorCounter = (this._sponsorCounter || 0) + 1;
+        const delay = this.state.sponsorSettings?.rotationDelay || 5;
+        if (this._sponsorCounter >= delay) {
+          this._sponsorCounter = 0;
+          const curIdx = this.state.sponsorSettings?.currentSponsorIndex || 0;
+          this.state.sponsorSettings.currentSponsorIndex = (curIdx + 1) % activeSponsors.length;
+          stateChanged = true;
+        }
+      }
+
+      if (stateChanged && typeof this.onStateChange === 'function') {
+        this.onStateChange(this.getState());
       }
     }, 1000);
   }
@@ -128,9 +179,23 @@ class StateManager {
         const { team, delta, value } = payload;
         const targetTeam = team === 1 ? this.state.team1 : this.state.team2;
         if (value !== undefined) {
+          const oldVal = targetTeam.score;
           targetTeam.score = Math.max(0, parseInt(value, 10) || 0);
+          if (targetTeam.score > oldVal) {
+            this.state.topTeam = team;
+          } else if (targetTeam.score < oldVal) {
+            this.state.topTeam = team === 1 ? 2 : 1;
+          }
         } else if (delta !== undefined) {
-          targetTeam.score = Math.max(0, targetTeam.score + parseInt(delta, 10));
+          const d = parseInt(delta, 10);
+          targetTeam.score = Math.max(0, targetTeam.score + d);
+          if (d > 0) {
+            // Al sumar un punto, mover a la posición de arriba al equipo correspondiente
+            this.state.topTeam = team;
+          } else if (d < 0) {
+            // Al restar un punto, moverlo a la posición inferior
+            this.state.topTeam = team === 1 ? 2 : 1;
+          }
         }
         break;
       }
@@ -153,16 +218,97 @@ class StateManager {
       }
 
       case 'UPDATE_TIMEOUT': {
-        const { team, delta, used } = payload;
+        const { team, delta, used, duration } = payload;
         const targetTeam = team === 1 ? this.state.team1 : this.state.team2;
         if (used !== undefined) {
           targetTeam.timeoutsUsed = Math.min(targetTeam.timeoutsTotal, Math.max(0, parseInt(used, 10)));
         } else if (delta !== undefined) {
+          const d = parseInt(delta, 10);
           targetTeam.timeoutsUsed = Math.min(
             targetTeam.timeoutsTotal,
-            Math.max(0, targetTeam.timeoutsUsed + parseInt(delta, 10))
+            Math.max(0, targetTeam.timeoutsUsed + d)
           );
+          if (d > 0) {
+            const defaultDur = this.state.timeoutSettings?.defaultDuration || 30;
+            const timeoutSeconds = duration !== undefined ? Math.max(1, parseInt(duration, 10)) : defaultDur;
+            this.state.activeTimeout = {
+              team,
+              teamName: targetTeam.name,
+              color: targetTeam.color,
+              secondsLeft: timeoutSeconds
+            };
+            if (this.state.sponsorSettings) {
+              this.state.sponsorSettings.currentSponsorIndex = 0;
+            }
+            this._sponsorCounter = 0;
+          }
         }
+        break;
+      }
+
+      case 'SET_TIMEOUT_DURATION': {
+        const { duration } = payload;
+        if (!this.state.timeoutSettings) this.state.timeoutSettings = {};
+        this.state.timeoutSettings.defaultDuration = Math.max(5, parseInt(duration, 10) || 30);
+        break;
+      }
+
+      case 'ADJUST_ACTIVE_TIMEOUT': {
+        const { delta, secondsLeft } = payload;
+        if (this.state.activeTimeout) {
+          if (secondsLeft !== undefined) {
+            this.state.activeTimeout.secondsLeft = Math.max(1, parseInt(secondsLeft, 10) || 1);
+          } else if (delta !== undefined) {
+            this.state.activeTimeout.secondsLeft = Math.max(1, this.state.activeTimeout.secondsLeft + parseInt(delta, 10));
+          }
+        }
+        break;
+      }
+
+      case 'DISMISS_TIMEOUT': {
+        this.state.activeTimeout = null;
+        break;
+      }
+
+      // --- PATROCINADORES / SPONSORS ---
+      case 'ADD_SPONSOR': {
+        const { name, image } = payload;
+        if (!this.state.sponsors) this.state.sponsors = [];
+        const newSponsor = {
+          id: 'sp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+          name: (name || '').trim(),
+          image: (image || '').trim(),
+          visible: true
+        };
+        this.state.sponsors.push(newSponsor);
+        break;
+      }
+
+      case 'REMOVE_SPONSOR': {
+        const { id } = payload;
+        this.state.sponsors = (this.state.sponsors || []).filter(s => s.id !== id);
+        if (this.state.sponsorSettings) {
+          this.state.sponsorSettings.currentSponsorIndex = 0;
+        }
+        break;
+      }
+
+      case 'TOGGLE_SPONSOR': {
+        const { id } = payload;
+        const sp = (this.state.sponsors || []).find(s => s.id === id);
+        if (sp) {
+          sp.visible = !sp.visible;
+        }
+        break;
+      }
+
+      case 'UPDATE_SPONSOR_SETTINGS': {
+        if (!this.state.sponsorSettings) {
+          this.state.sponsorSettings = { showDuringTimeout: true, showDuringGame: false, rotationDelay: 5, currentSponsorIndex: 0 };
+        }
+        if (payload.showDuringTimeout !== undefined) this.state.sponsorSettings.showDuringTimeout = Boolean(payload.showDuringTimeout);
+        if (payload.showDuringGame !== undefined) this.state.sponsorSettings.showDuringGame = Boolean(payload.showDuringGame);
+        if (payload.rotationDelay !== undefined) this.state.sponsorSettings.rotationDelay = Math.max(1, parseInt(payload.rotationDelay, 10) || 5);
         break;
       }
 
@@ -181,6 +327,13 @@ class StateManager {
         // Invert serving if active
         if (this.state.serving === 1) this.state.serving = 2;
         else if (this.state.serving === 2) this.state.serving = 1;
+
+        this.state.topTeam = this.state.topTeam === 1 ? 2 : 1;
+
+        if (this.state.activeTimeout) {
+          this.state.activeTimeout.team = this.state.activeTimeout.team === 1 ? 2 : 1;
+          this.state.activeTimeout.teamName = this.state.activeTimeout.team === 1 ? this.state.team1.name : this.state.team2.name;
+        }
 
         // Swap team-specific custom fields
         this.state.customFields.forEach(field => {
@@ -211,6 +364,8 @@ class StateManager {
         this.state.team2.setsWon = 0;
         this.state.team2.timeoutsUsed = 0;
         this.state.currentSet = 1;
+        this.state.topTeam = 1;
+        this.state.activeTimeout = null;
         this.state.timer.seconds = 0;
         this.state.timer.running = false;
         this.state.customFields.forEach(f => {
@@ -248,7 +403,7 @@ class StateManager {
 
       case 'ADD_CUSTOM_FIELD': {
         const { label, type, team1Value, team2Value, value } = payload;
-        const id = 'field_' + Date.now();
+        const id = 'field_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
         const newField = {
           id,
           label: label || 'Nuevo Campo',
@@ -310,6 +465,8 @@ class StateManager {
           this.state.currentSet = preset.currentSet;
           this.state.maxSets = preset.maxSets;
           this.state.serving = preset.serving;
+          this.state.topTeam = 1;
+          this.state.activeTimeout = null;
           this.state.team1 = { ...preset.team1 };
           this.state.team2 = { ...preset.team2 };
           this.state.customFields = JSON.parse(JSON.stringify(preset.customFields || []));

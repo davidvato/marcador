@@ -52,7 +52,7 @@ El sistema se divide en tres componentes esenciales:
 ### Pasos rápidos:
 1. Abre la carpeta del proyecto en una terminal:
    ```bash
-   cd c:\Users\DVargas\Documents\marcador
+   cd c:\Users\Dave\Documents\marcador
    ```
 2. Inicia el servidor ejecutando:
    ```bash

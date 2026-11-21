@@ -111,6 +111,95 @@ function renderAdminUI(state) {
     t2ServeBtn.classList.remove('active');
   }
 
+  // Posición de Equipos en el Marcador (Arriba vs Inferior)
+  const isTeam1Top = state.topTeam !== 2;
+  const t1Badge = document.getElementById('t1-pos-badge');
+  const t2Badge = document.getElementById('t2-pos-badge');
+  if (t1Badge && t2Badge) {
+    if (isTeam1Top) {
+      t1Badge.textContent = '⬆ Posición Arriba';
+      t1Badge.className = 'pos-badge pos-top';
+      t2Badge.textContent = '⬇ Posición Inferior';
+      t2Badge.className = 'pos-badge pos-bottom';
+    } else {
+      t1Badge.textContent = '⬇ Posición Inferior';
+      t1Badge.className = 'pos-badge pos-bottom';
+      t2Badge.textContent = '⬆ Posición Arriba';
+      t2Badge.className = 'pos-badge pos-top';
+    }
+  }
+
+  // Anuncio / Modal de Tiempo Fuera
+  const timeoutModal = document.getElementById('timeout-admin-modal');
+  if (timeoutModal) {
+    if (state.activeTimeout && state.activeTimeout.secondsLeft > 0) {
+      timeoutModal.classList.remove('hidden');
+      document.getElementById('timeout-admin-team').textContent = state.activeTimeout.teamName || 'EQUIPO';
+      document.getElementById('timeout-admin-seconds').textContent = `${state.activeTimeout.secondsLeft}s`;
+
+      // Vista previa de patrocinador en rotación durante tiempo fuera
+      const msp = document.getElementById('modal-sponsor-preview');
+      if (msp) {
+        const activeSponsors = (state.sponsors || []).filter(s => s.visible !== false);
+        if (state.sponsorSettings?.showDuringTimeout && activeSponsors.length > 0) {
+          const curIdx = state.sponsorSettings.currentSponsorIndex || 0;
+          const curSp = activeSponsors[curIdx % activeSponsors.length];
+          msp.classList.remove('hidden');
+          const mspLogo = document.getElementById('msp-logo');
+          const mspName = document.getElementById('msp-name');
+          if (curSp.image) {
+            mspLogo.src = curSp.image;
+            mspLogo.classList.remove('hidden');
+          } else {
+            mspLogo.classList.add('hidden');
+          }
+          mspName.textContent = curSp.name || '';
+        } else {
+          msp.classList.add('hidden');
+        }
+      }
+    } else {
+      timeoutModal.classList.add('hidden');
+    }
+  }
+
+  // Barra de Tiempo Fuera Activo en el panel
+  const activeBar = document.getElementById('admin-active-timeout-bar');
+  if (activeBar) {
+    if (state.activeTimeout && state.activeTimeout.secondsLeft > 0) {
+      activeBar.classList.remove('hidden');
+      document.getElementById('aatb-team-name').textContent = state.activeTimeout.teamName || 'EQUIPO';
+      document.getElementById('aatb-seconds').textContent = `${state.activeTimeout.secondsLeft}s`;
+    } else {
+      activeBar.classList.add('hidden');
+    }
+  }
+
+  // Ajustes de Tiempo Fuera
+  const defDurInput = document.getElementById('timeout-default-dur');
+  if (defDurInput && document.activeElement !== defDurInput) {
+    defDurInput.value = state.timeoutSettings?.defaultDuration || 30;
+  }
+
+  // Configuración de Patrocinadores
+  const chkTimeout = document.getElementById('sp-show-timeout');
+  if (chkTimeout && document.activeElement !== chkTimeout) {
+    chkTimeout.checked = Boolean(state.sponsorSettings?.showDuringTimeout);
+  }
+
+  const chkGame = document.getElementById('sp-show-game');
+  if (chkGame && document.activeElement !== chkGame) {
+    chkGame.checked = Boolean(state.sponsorSettings?.showDuringGame);
+  }
+
+  const spDelayInput = document.getElementById('sp-delay-input');
+  if (spDelayInput && document.activeElement !== spDelayInput) {
+    spDelayInput.value = state.sponsorSettings?.rotationDelay || 5;
+  }
+
+  // Lista de Patrocinadores
+  renderSponsorsList(state.sponsors || [], state.sponsorSettings?.currentSponsorIndex || 0);
+
   // Metadatos
   const metaTourn = document.getElementById('meta-tournament');
   if (document.activeElement !== metaTourn) metaTourn.value = state.tournament || '';
@@ -139,6 +228,77 @@ function renderAdminUI(state) {
 
   // Campos personalizados
   renderCustomFieldsAdmin(state.customFields || []);
+}
+
+function renderSponsorsList(sponsors, activeIndex) {
+  const container = document.getElementById('sponsors-list');
+  const countBadge = document.getElementById('sponsors-count');
+  if (!container) return;
+
+  if (countBadge) countBadge.textContent = (sponsors || []).length;
+  container.innerHTML = '';
+
+  if (!sponsors || sponsors.length === 0) {
+    container.innerHTML = '<p style="color: #64748b; font-size: 0.85rem; padding: 10px 0;">No hay patrocinadores registrados. Añade uno con el formulario a la derecha.</p>';
+    return;
+  }
+
+  sponsors.forEach(sp => {
+    const item = document.createElement('div');
+    item.className = 'sponsor-item-card';
+
+    const left = document.createElement('div');
+    left.className = 'sponsor-item-left';
+
+    if (sp.image) {
+      const img = document.createElement('img');
+      img.className = 'sponsor-logo-thumb';
+      img.src = sp.image;
+      img.alt = sp.name || 'Logo';
+      left.appendChild(img);
+    } else {
+      const noLogo = document.createElement('div');
+      noLogo.className = 'sponsor-logo-thumb';
+      noLogo.style.display = 'flex';
+      noLogo.style.alignItems = 'center';
+      noLogo.style.justifyContent = 'center';
+      noLogo.style.color = '#64748b';
+      noLogo.style.fontSize = '0.7rem';
+      noLogo.style.fontWeight = '700';
+      noLogo.textContent = 'TEXTO';
+      left.appendChild(noLogo);
+    }
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'sponsor-item-name';
+    nameSpan.textContent = sp.name || '(Sin nombre)';
+    left.appendChild(nameSpan);
+
+    item.appendChild(left);
+
+    const actions = document.createElement('div');
+    actions.className = 'sponsor-item-actions';
+
+    const btnVis = document.createElement('button');
+    btnVis.className = `btn btn-sm ${sp.visible ? 'btn-outline' : 'btn-secondary'}`;
+    btnVis.textContent = sp.visible ? '👁 Visible' : '👁‍🗨 Oculto';
+    btnVis.onclick = () => sendAction('TOGGLE_SPONSOR', { id: sp.id });
+    actions.appendChild(btnVis);
+
+    const btnDel = document.createElement('button');
+    btnDel.className = 'btn btn-sm btn-danger';
+    btnDel.textContent = '✕';
+    btnDel.title = 'Eliminar patrocinador';
+    btnDel.onclick = () => {
+      if (confirm(`¿Eliminar el patrocinador "${sp.name}"?`)) {
+        sendAction('REMOVE_SPONSOR', { id: sp.id });
+      }
+    };
+    actions.appendChild(btnDel);
+
+    item.appendChild(actions);
+    container.appendChild(item);
+  });
 }
 
 function renderCustomFieldsAdmin(fields) {
@@ -357,6 +517,141 @@ function setupEventListeners() {
       prompt('Copia este enlace para OBS Studio:', overlayUrl);
     });
   };
+
+  // Botón para cerrar tiempo fuera desde el modal
+  const btnCloseTimeout = document.getElementById('btn-close-timeout');
+  if (btnCloseTimeout) {
+    btnCloseTimeout.onclick = () => sendAction('DISMISS_TIMEOUT');
+  }
+
+  // Botón para cerrar tiempo fuera desde la barra de estado
+  const btnBarCancel = document.getElementById('btn-bar-cancel-timeout');
+  if (btnBarCancel) {
+    btnBarCancel.onclick = () => sendAction('DISMISS_TIMEOUT');
+  }
+
+  // Ajustes de cronómetro de tiempo fuera en el modal
+  const btnAdjMinus10 = document.getElementById('btn-adj-minus-10');
+  if (btnAdjMinus10) btnAdjMinus10.onclick = () => sendAction('ADJUST_ACTIVE_TIMEOUT', { delta: -10 });
+
+  const btnAdjMinus5 = document.getElementById('btn-adj-minus-5');
+  if (btnAdjMinus5) btnAdjMinus5.onclick = () => sendAction('ADJUST_ACTIVE_TIMEOUT', { delta: -5 });
+
+  const btnAdjPlus5 = document.getElementById('btn-adj-plus-5');
+  if (btnAdjPlus5) btnAdjPlus5.onclick = () => sendAction('ADJUST_ACTIVE_TIMEOUT', { delta: 5 });
+
+  const btnAdjPlus10 = document.getElementById('btn-adj-plus-10');
+  if (btnAdjPlus10) btnAdjPlus10.onclick = () => sendAction('ADJUST_ACTIVE_TIMEOUT', { delta: 10 });
+
+  // Configuración de Duración Predeterminada de Tiempo Fuera
+  const btnDurMinus = document.getElementById('btn-timeout-dur-minus');
+  if (btnDurMinus) {
+    btnDurMinus.onclick = () => {
+      const cur = currentState?.timeoutSettings?.defaultDuration || 30;
+      sendAction('SET_TIMEOUT_DURATION', { duration: Math.max(5, cur - 5) });
+    };
+  }
+
+  const btnDurPlus = document.getElementById('btn-timeout-dur-plus');
+  if (btnDurPlus) {
+    btnDurPlus.onclick = () => {
+      const cur = currentState?.timeoutSettings?.defaultDuration || 30;
+      sendAction('SET_TIMEOUT_DURATION', { duration: cur + 5 });
+    };
+  }
+
+  const durInput = document.getElementById('timeout-default-dur');
+  if (durInput) {
+    durInput.onchange = (e) => {
+      sendAction('SET_TIMEOUT_DURATION', { duration: parseInt(e.target.value, 10) || 30 });
+    };
+  }
+
+  // Controles de Patrocinadores
+  const spShowTimeout = document.getElementById('sp-show-timeout');
+  if (spShowTimeout) {
+    spShowTimeout.onchange = (e) => {
+      sendAction('UPDATE_SPONSOR_SETTINGS', { showDuringTimeout: e.target.checked });
+    };
+  }
+
+  const spShowGame = document.getElementById('sp-show-game');
+  if (spShowGame) {
+    spShowGame.onchange = (e) => {
+      sendAction('UPDATE_SPONSOR_SETTINGS', { showDuringGame: e.target.checked });
+    };
+  }
+
+  const spDelayInput = document.getElementById('sp-delay-input');
+  if (spDelayInput) {
+    spDelayInput.onchange = (e) => {
+      sendAction('UPDATE_SPONSOR_SETTINGS', { rotationDelay: parseInt(e.target.value, 10) || 5 });
+    };
+  }
+
+  // Manejo de carga de imágenes para Patrocinadores (URL o Archivo Local)
+  let uploadedSponsorImage = '';
+  const sponsorFileInput = document.getElementById('new-sponsor-file');
+  const fileChosenText = document.getElementById('file-chosen-text');
+  const sponsorPreviewWrapper = document.getElementById('sponsor-preview-wrapper');
+  const sponsorPreviewImg = document.getElementById('new-sponsor-preview-img');
+  const sponsorUrlInput = document.getElementById('new-sponsor-img-url');
+
+  if (sponsorFileInput) {
+    sponsorFileInput.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        fileChosenText.textContent = file.name;
+        const reader = new FileReader();
+        reader.onload = (loadEvent) => {
+          uploadedSponsorImage = loadEvent.target.result;
+          sponsorPreviewImg.src = uploadedSponsorImage;
+          sponsorPreviewWrapper.classList.remove('hidden');
+          sponsorUrlInput.value = '';
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+  }
+
+  if (sponsorUrlInput) {
+    sponsorUrlInput.oninput = (e) => {
+      const url = e.target.value.trim();
+      if (url) {
+        uploadedSponsorImage = '';
+        sponsorPreviewImg.src = url;
+        sponsorPreviewWrapper.classList.remove('hidden');
+        if (fileChosenText) fileChosenText.textContent = 'Ningún archivo';
+        if (sponsorFileInput) sponsorFileInput.value = '';
+      } else {
+        if (!uploadedSponsorImage && sponsorPreviewWrapper) {
+          sponsorPreviewWrapper.classList.add('hidden');
+        }
+      }
+    };
+  }
+
+  // Formulario Agregar Patrocinador
+  const formAddSponsor = document.getElementById('form-add-sponsor');
+  if (formAddSponsor) {
+    formAddSponsor.onsubmit = (e) => {
+      e.preventDefault();
+      const nameInput = document.getElementById('new-sponsor-name');
+      const name = nameInput.value.trim();
+      const image = uploadedSponsorImage || (sponsorUrlInput ? sponsorUrlInput.value.trim() : '');
+
+      if (!name && !image) return;
+
+      sendAction('ADD_SPONSOR', { name, image });
+
+      nameInput.value = '';
+      if (sponsorUrlInput) sponsorUrlInput.value = '';
+      if (sponsorFileInput) sponsorFileInput.value = '';
+      uploadedSponsorImage = '';
+      if (fileChosenText) fileChosenText.textContent = 'Ningún archivo';
+      if (sponsorPreviewWrapper) sponsorPreviewWrapper.classList.add('hidden');
+    };
+  }
 
   // Agregar nuevo campo personalizado
   document.getElementById('form-add-field').onsubmit = (e) => {

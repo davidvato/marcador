@@ -35,6 +35,11 @@ body {
   left: 32px;
 }
 
+.pos-top-right {
+  top: 24px;
+  right: 32px;
+}
+
 .pos-bottom-center {
   bottom: 32px;
   left: 50%;
@@ -100,27 +105,34 @@ body {
   font-weight: 800;
 }
 
-/* --- Marcador Principal --- */
+/* --- Marcador Principal (Formato Broadcast Stacked / 2 Filas) --- */
 .scoreboard-main {
   display: flex;
-  align-items: stretch;
-  background: rgba(15, 23, 42, 0.92);
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.94);
   backdrop-filter: blur(12px);
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-top: none;
-  min-height: 64px;
+  min-width: 380px;
+  max-width: 500px;
   overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
 }
 
-/* Tarjetas de Equipo */
-.team-card {
+.team-row {
   display: flex;
   align-items: center;
-  flex: 1;
-  min-width: 280px;
-  max-width: 420px;
+  height: 56px;
+  position: relative;
+  transition: background-color 0.25s ease;
+}
+
+.row-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  width: 100%;
 }
 
 .team-color-bar {
@@ -135,24 +147,16 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 8px 16px;
+  padding: 6px 14px;
   flex: 1;
   overflow: hidden;
 }
 
-.team-left .team-details {
-  align-items: flex-start;
-}
-
-.team-right .team-details {
-  align-items: flex-end;
-}
-
-.team-meta-row {
+.team-name-line {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 2px;
+  overflow: hidden;
 }
 
 .team-name {
@@ -163,7 +167,6 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 220px;
   color: #ffffff;
   text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
@@ -192,7 +195,22 @@ body {
   }
 }
 
-/* Indicador de Tiempos Fuera (Timeouts) */
+/* Sección de Tiempo Fuera con leyenda explícita */
+.timeouts-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.timeouts-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+
 .timeouts-container {
   display: flex;
   gap: 4px;
@@ -236,20 +254,19 @@ body {
 /* Caja de Puntaje */
 .score-box {
   background: #020617;
-  min-width: 68px;
-  height: 64px;
+  min-width: 72px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
   position: relative;
   overflow: hidden;
 }
 
 .score-num {
   font-family: 'Oswald', sans-serif;
-  font-size: 2.5rem;
+  font-size: 2.3rem;
   font-weight: 700;
   line-height: 1;
   color: #ffffff;
@@ -268,20 +285,238 @@ body {
   100% { transform: scale(1); }
 }
 
-/* Separador central */
-.center-divider {
+/* --- Banner de Anuncio de Tiempo Fuera en OBS --- */
+.timeout-overlay-banner {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.96));
+  backdrop-filter: blur(12px);
+  border-radius: 8px;
+  border: 2px solid #facc15;
+  border-left: 8px solid #f59e0b;
+  box-shadow: 0 0 25px rgba(250, 204, 21, 0.5), 0 8px 24px rgba(0, 0, 0, 0.7);
+  padding: 8px 16px;
+  margin-bottom: 8px;
+  animation: banner-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes banner-slide-in {
+  from { opacity: 0; transform: translateY(-10px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.tob-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.tob-icon {
+  font-size: 1.5rem;
+  animation: pulse-icon 1s infinite alternate;
+}
+
+@keyframes pulse-icon {
+  from { transform: scale(1); filter: drop-shadow(0 0 4px #facc15); }
+  to { transform: scale(1.2); filter: drop-shadow(0 0 10px #facc15); }
+}
+
+.tob-text-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.tob-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #facc15;
+  text-transform: uppercase;
+}
+
+.tob-team-name {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+}
+
+.tob-seconds-badge {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(250, 204, 21, 0.4);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #facc15;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Ventana Independiente de Patrocinadores al Centro de la Pantalla --- */
+.timeout-center-sponsor-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  pointer-events: none;
+  animation: tcsm-pop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tcsm-card {
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.98));
+  backdrop-filter: blur(16px);
+  border: 2px solid #facc15;
+  border-radius: 16px;
+  box-shadow: 0 0 40px rgba(250, 204, 21, 0.45), 0 25px 60px rgba(0, 0, 0, 0.85);
+  padding: 24px 36px;
+  min-width: 400px;
+  max-width: 560px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.tcsm-header {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(2, 6, 23, 0.8);
-  padding: 0 12px;
+  width: 100%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding-bottom: 10px;
 }
 
-.vs-text {
+.tcsm-badge {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #facc15;
+  text-transform: uppercase;
+}
+
+.tcsm-subtitle {
   font-size: 0.75rem;
-  font-weight: 900;
-  color: #64748b;
-  letter-spacing: 0.15em;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tcsm-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 110px;
+  width: 100%;
+  animation: tcsm-content-fade 0.35s ease-out;
+}
+
+.tcsm-logo {
+  max-height: 120px;
+  max-width: 320px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.6));
+}
+
+.tcsm-name {
+  font-family: 'Oswald', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.tcsm-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.tcsm-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.tcsm-dot.active {
+  background: #facc15;
+  transform: scale(1.3);
+  box-shadow: 0 0 8px #facc15;
+}
+
+@keyframes tcsm-pop {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes tcsm-content-fade {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Franja de Patrocinadores durante el Juego en Vivo */
+.game-sponsor-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(10, 15, 29, 0.94);
+  backdrop-filter: blur(10px);
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 5px 18px;
+  margin-top: 2px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  animation: sponsor-fade 0.4s ease-out;
+}
+
+.gsb-tag {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #facc15;
+  text-transform: uppercase;
+}
+
+.gsb-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gsb-img {
+  max-height: 32px;
+  max-width: 110px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+}
+
+.gsb-name {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+@keyframes sponsor-fade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* --- Barra de Campos Personalizados --- */
